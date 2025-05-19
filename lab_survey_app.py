@@ -699,46 +699,14 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # Inject custom CSS first thing
-    st.markdown(
-        """
-        <style>
-            /* Hide the hamburger menu */
-            #MainMenu {visibility: hidden;}
-            
-            /* Hide the footer */
-            footer {visibility: hidden;}
-            
-            /* Hide the deploy button specifically */
-            .stApp .stDeployButton {
-                display: none !important;
-                visibility: hidden !important;
-                height: 0px !important;
-                min-height: 0px !important;
-                width: 0px !important;
-                margin: 0px !important;
-                padding: 0px !important;
-                position: fixed !important;
-                right: -1000px !important;
-                z-index: -1000 !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
-            
-            /* Hide the header completely */
-            header[data-testid="stHeader"] {
-                display: none !important;
-            }
-            
-            /* Fix the main container padding */
-            .stApp .main .block-container {
-                padding-top: 1rem !important;
-                padding-bottom: 1rem !important;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    # Inject custom CSS first thing to hide UI elements
+    st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .viewerBadge_container__1QSob {display: none;}
+    </style>
+    """, unsafe_allow_html=True)
     
     # Initialize session state
     initialize_session_state()
