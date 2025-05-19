@@ -692,31 +692,57 @@ def initialize_session_state():
         st.session_state.hardware_info = {}
 
 def main():
+    # Set page config - must be the first Streamlit command
     st.set_page_config(
-        page_title="Lab Setup Survey",
-        page_icon="🔬",
-        layout="centered"
+        page_title="Lab Survey App",
+        layout="wide",
+        initial_sidebar_state="collapsed"
     )
     
-    # Initialize session state variables
+    # Inject custom CSS first thing
+    st.markdown(
+        """
+        <style>
+            /* Hide the hamburger menu */
+            #MainMenu {visibility: hidden;}
+            
+            /* Hide the footer */
+            footer {visibility: hidden;}
+            
+            /* Hide the deploy button specifically */
+            .stApp .stDeployButton {
+                display: none !important;
+                visibility: hidden !important;
+                height: 0px !important;
+                min-height: 0px !important;
+                width: 0px !important;
+                margin: 0px !important;
+                padding: 0px !important;
+                position: fixed !important;
+                right: -1000px !important;
+                z-index: -1000 !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+            
+            /* Hide the header completely */
+            header[data-testid="stHeader"] {
+                display: none !important;
+            }
+            
+            /* Fix the main container padding */
+            .stApp .main .block-container {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    # Initialize session state
     initialize_session_state()
     
-    # Hide the Streamlit menu and footer
-    hide_streamlit_style = """
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stDeployButton {
-        display: none;
-    }
-    #root > div:nth-child(1) > div > div > div > div > section > div > div:nth-child(1) > div > div > div:nth-child(5) > div {
-        display: none;
-    }
-    </style>
-    """
-    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-    
-    # Custom CSS for compact form layout
     st.markdown("""
     <style>
         .main .block-container {
