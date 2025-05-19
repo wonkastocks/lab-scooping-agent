@@ -379,72 +379,79 @@ def hardware_page():
             help="Please specify any additional requirements or special configurations needed"
         )
         
-        # Notes
+        # Notes - Increased height to 100px to meet minimum requirements
         notes = st.text_area(
             "Additional Notes or Comments",
             key="hardware_notes",
-            height=60
+            height=100
         )
         
         # Navigation buttons
         col1, col2, col3 = st.columns([1, 1, 2])
-        with col1:
-            if st.form_submit_button("Back"):
-                st.session_state.page = "lab_request"
-                st.rerun()
-        with col2:
-            if st.form_submit_button("Submit Survey"):
-                # Process Windows systems
-                if other_win:
-                    windows_systems.append({"version": f"Other: {other_win}", "count": 1})
-                
-                # Process Linux systems
-                if other_linux:
-                    linux_systems.append({"distro": f"Other: {other_linux}", "count": 1})
-                
-                # Process other OS
-                if other_os:
-                    other_systems.append({"name": f"Other: {other_os}", "count": 1})
-                
-                hardware_info = {
-                    "system_counts": {
-                        "total_systems": total_systems,
-                        "pre_installed": pre_installed,
-                        "boot_iso": boot_iso
-                    },
-                    "cpu_config": {
-                        "cores_per_system": cpu_per_system,
-                        "notes": cpu_notes if cpu_per_system == "Varies by System (specify below)" else ""
-                    },
-                    "memory_config": {
-                        "ram_per_system": ram_per_system
-                    },
-                    "storage_config": {
-                        "partitions_per_system": hdd_partitions,
-                        "partition_size": hdd_size
-                    },
-                    "additional_features": {
-                        "cd_rom": cd_rom == "Yes",
-                        "nested_virtualization": nested_virt
-                    },
-                    "systems_by_os": {
-                        "windows": windows_systems,
-                        "linux": linux_systems,
-                        "other": other_systems
-                    },
-                    "network_requirements": {
-                        "network_type": network_type,
-                        "number_of_subnets": num_subnets,
-                        "internet_access": internet_access == "Yes"
-                    },
-                    "other_requirements": other_reqs,
-                    "notes": notes
-                }
-                
-                # Store hardware info in session state and go to summary
-                st.session_state.hardware_info = hardware_info
-                st.session_state.page = "summary"
-                st.rerun()
+        
+        # Single form submission handler
+        submitted = st.form_submit_button("Submit Survey")
+        back_clicked = st.form_submit_button("Back")
+        
+        if back_clicked:
+            st.session_state.page = "lab_request"
+            st.rerun()
+            
+        if submitted:
+            # Process Windows systems
+            if 'other_win' in locals() and other_win:
+                windows_systems.append({"version": f"Other: {other_win}", "count": 1})
+            
+            # Process Linux systems
+            if 'other_linux' in locals() and other_linux:
+                linux_systems.append({"distro": f"Other: {other_linux}", "count": 1})
+            
+            # Process other OS
+            if 'other_os' in locals() and other_os:
+                other_systems.append({"name": f"Other: {other_os}", "count": 1})
+            
+            # Get cpu_notes if it exists
+            cpu_notes_value = cpu_notes if 'cpu_notes' in locals() else ""
+            
+            hardware_info = {
+                "system_counts": {
+                    "total_systems": total_systems,
+                    "pre_installed": pre_installed,
+                    "boot_iso": boot_iso
+                },
+                "cpu_config": {
+                    "cores_per_system": cpu_per_system,
+                    "notes": cpu_notes_value if cpu_per_system == "Varies by System (specify below)" else ""
+                },
+                "memory_config": {
+                    "ram_per_system": ram_per_system
+                },
+                "storage_config": {
+                    "partitions_per_system": hdd_partitions if 'hdd_partitions' in locals() else 1,
+                    "partition_size": hdd_size if 'hdd_size' in locals() else ""
+                },
+                "additional_features": {
+                    "cd_rom": cd_rom == "Yes" if 'cd_rom' in locals() else False,
+                    "nested_virtualization": nested_virt if 'nested_virt' in locals() else False
+                },
+                "systems_by_os": {
+                    "windows": windows_systems if 'windows_systems' in locals() else [],
+                    "linux": linux_systems if 'linux_systems' in locals() else [],
+                    "other": other_systems if 'other_systems' in locals() else []
+                },
+                "network_requirements": {
+                    "network_type": network_type,
+                    "number_of_subnets": num_subnets,
+                    "internet_access": internet_access == "Yes"
+                },
+                "other_requirements": other_reqs,
+                "notes": notes
+            }
+            
+            # Store hardware info in session state and go to summary
+            st.session_state.hardware_info = hardware_info
+            st.session_state.page = "summary"
+            st.rerun()
 
 def confirmation_page():
     st.header("Thank You!")
