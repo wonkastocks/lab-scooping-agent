@@ -18,19 +18,28 @@ def get_database():
         MONGODB_URI,
         server_api=ServerApi('1'),
         tls=True,
-        tlsAllowInvalidCertificates=False,
-        tlsInsecure=False,
+        tlsAllowInvalidCertificates=True,  # Only use this in development
         retryWrites=True,
         w='majority',
         connectTimeoutMS=30000,
-        socketTimeoutMS=30000
+        socketTimeoutMS=30000,
+        serverSelectionTimeoutMS=5000  # Fail fast if can't connect
     )
     
-    # Test the connection
+    # Test the connection with more detailed error handling
     try:
+        # The ping command is cheap and does not require auth
         client.admin.command('ping')
+        print("Pinged your deployment. You successfully connected to MongoDB!")
     except Exception as e:
-        st.error(f"MongoDB connection error: {e}")
+        error_msg = f"MongoDB connection error: {str(e)}\n"
+        error_msg += "Please check the following:\n"
+        error_msg += "1. Your MongoDB Atlas connection string\n"
+        error_msg += "2. Your network connection\n"
+        error_msg += "3. MongoDB Atlas IP whitelist settings\n"
+        error_msg += "4. MongoDB user permissions"
+        print(error_msg)
+        raise Exception(error_msg)
     
     return client["lab_survey"]
 
