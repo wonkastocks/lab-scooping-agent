@@ -701,6 +701,21 @@ def main():
     # Initialize session state variables
     initialize_session_state()
     
+    # Hide the Streamlit menu and footer
+    hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {
+        display: none;
+    }
+    #root > div:nth-child(1) > div > div > div > div > section > div > div:nth-child(1) > div > div > div:nth-child(5) > div {
+        display: none;
+    }
+    </style>
+    """
+    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+    
     # Custom CSS for compact form layout
     st.markdown("""
     <style>
