@@ -12,17 +12,51 @@ load_dotenv()
 def get_database():
     # Use your MongoDB connection string from environment variables
     MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
-    client = MongoClient(MONGODB_URI, server_api=ServerApi('1'))
+    
+    # Create a new client and connect to the server
+    client = MongoClient(
+        MONGODB_URI,
+        server_api=ServerApi('1'),
+        tls=True,
+        tlsAllowInvalidCertificates=False,
+        tlsInsecure=False,
+        retryWrites=True,
+        w='majority',
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000
+    )
+    
+    # Test the connection
+    try:
+        client.admin.command('ping')
+    except Exception as e:
+        st.error(f"MongoDB connection error: {e}")
+    
     return client["lab_survey"]
 
 def save_responses(responses):
     try:
         db = get_database()
         responses["submitted_at"] = datetime.utcnow()
-        db.responses.insert_one(responses)
-        return True
+        
+        # Add a try-except block specifically for the insert operation
+        try:
+            result = db.responses.insert_one(responses)
+            if result.inserted_id:
+                st.success("Successfully saved to database!")
+                return True
+            else:
+                st.error("Failed to save to database: No document was inserted")
+                return False
+                
+        except Exception as insert_error:
+            st.error(f"Error saving to database: {str(insert_error)}")
+            st.error("Please check your MongoDB connection and try again.")
+            return False
+            
     except Exception as e:
-        st.error(f"Error saving to database: {e}")
+        st.error(f"Database connection error: {str(e)}")
+        st.error("Please check your MongoDB connection string and network settings.")
         return False
 
 def contact_page():
