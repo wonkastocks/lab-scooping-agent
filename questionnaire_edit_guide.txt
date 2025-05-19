@@ -1,0 +1,129 @@
+# INSTRUCTIONS FOR EDITING QUESTIONNAIRE
+# ====================================
+# 1. Edit the questions below as needed
+# 2. For each question, modify the text after the colon
+# 3. For options, add/remove lines starting with ' - '
+# 4. When done, save the file and let me know
+# 5. I'll convert your changes back to the database format
+
+# TYPES OF QUESTIONS:
+# ------------------
+# TYPE: text        - Single line text input
+# TYPE: textarea    - Multiple line text input
+# TYPE: select     - Single selection (radio buttons)
+# TYPE: multiselect - Multiple selection (checkboxes)
+# TYPE: boolean    - Yes/No question
+# TYPE: number     - Number input
+
+# ===== QUESTION 1 =====
+ORDER: 1
+TYPE: text
+REQUIRED: true
+QUESTION: What is your name, email, and organization?
+DESCRIPTION: 
+OPTIONS:
+-
+HAS_OTHER: false
+
+
+# ===== QUESTION 2 =====
+ORDER: 2
+TYPE: text
+REQUIRED: true
+QUESTION: What is your phone number?
+DESCRIPTION: 
+OPTIONS:
+-
+HAS_OTHER: false
+
+
+# ===== QUESTION 3 =====
+ORDER: 3
+TYPE: select
+REQUIRED: true
+QUESTION: Who is this lab being built for? (Choose one)
+DESCRIPTION: 
+OPTIONS:
+ - University / College
+ - Technical or Trade School
+ - Non-Profit Organization
+ - Government Agency
+ - Private Business / Corporation
+ - Independent Instructor / Consultant
+ - Individual Learner / Certification Prep
+ - Other (please specify)
+HAS_OTHER: true
+
+
+# ===== QUESTION 4 =====
+ORDER: 4
+TYPE: textarea
+REQUIRED: true
+QUESTION: What is the purpose of the lab?
+DESCRIPTION: Be as detailed as possible
+OPTIONS:
+-
+HAS_OTHER: false
+
+
+# ===== QUESTION 5 =====
+ORDER: 5
+TYPE: textarea
+REQUIRED: true
+QUESTION: Please describe your project or lab environment needs:
+DESCRIPTION: Be as detailed as possible
+OPTIONS:
+-
+HAS_OTHER: false
+
+
+# ===== QUESTION 6 =====
+ORDER: 6
+TYPE: number
+REQUIRED: false
+QUESTION: How many students/learners will be accessing this lab on a regular basis?
+DESCRIPTION: 
+OPTIONS:
+-
+HAS_OTHER: false
+
+
+# ===== QUESTION 7 =====
+ORDER: 7
+TYPE: boolean
+REQUIRED: false
+QUESTION: Will this lab be used for commercial purposes?
+DESCRIPTION: 
+OPTIONS:
+-
+HAS_OTHER: false
+
+
+# ===== QUESTION 8 =====
+ORDER: 8
+TYPE: multiselect
+REQUIRED: false
+QUESTION: What type of equipment will be used in the lab? (Choose all that apply)
+DESCRIPTION: 
+OPTIONS:
+ - Computers
+ - Microscopes
+ - 3D Printers
+ - Other (please specify)
+HAS_OTHER: true
+
+
+# ===== EDITING GUIDE =====
+# To modify a question:
+# 1. Find the question by its number
+# 2. Change the text after the colon
+# 3. For options, add/remove lines starting with ' - '
+# 4. To remove a question, delete its entire section
+# 5. To add a new question, copy and paste a section and update the number
+# 6. Save the file when done
+
+# NOTES:
+# - HAS_OTHER: true adds an "Other" option with a text field
+# - For multiselect questions, users can select multiple options
+# - For select questions, users can only choose one option
+# - Set REQUIRED: false to make a question optional

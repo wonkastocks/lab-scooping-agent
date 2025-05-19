@@ -1,0 +1,94 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Virtual Environment
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local development
+.venv/
+
+# MongoDB data
+data/
+
+# Local development settings
+local_settings.py
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Large files and directories
+output/*.jsonl
+processed_docs/
+*.csv
+*.json
+*.ipynb_checkpoints*
+
+# Vector store and large data files
+vector_store_ids.json
+assistant_info.json
+assistant_update_report.json
+lab_intake_analysis.json
+lab_intake_cleanup_report.json
+project_organization.json
+cleaned_labs.csv
+extracted_labs.csv
+
+# Test files
+test_*
+*_test.py
+
+# Local development files
+*.local
+*.bak
+*~
+
+# Database files
+*.db
+*.sqlite3
+
+# IDE specific files
+.idea/
+.vscode/
+*.sublime-*
