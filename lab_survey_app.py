@@ -5,790 +5,815 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
+# Set page config - must be the first Streamlit command
+st.set_page_config(
+    page_title="Lab Scooping Agent",
+    page_icon="🔬",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for styling
+st.markdown("""
+    <style>
+        /* Main header with ACI logo */
+        .main-header {
+            display: flex;
+            align-items: center;
+            background-color: #1e40af;
+            color: white;
+            padding: 0.5rem 2rem;
+            margin: -2rem -2rem 2rem -2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        /* Main background and text colors */
+        .stApp {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 2rem;
+        }
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {
+            color: #1e40af;
+            font-weight: 600;
+        }
+        
+        /* Buttons */
+        .stButton>button {
+            background-color: #2563eb;
+            color: white;
+            border-radius: 6px;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        .stButton>button:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Form elements */
+        .stTextInput>div>div>input, 
+        .stTextArea>div>div>textarea,
+        .stSelectbox>div>div>div>div {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        /* Cards and containers */
+        .stExpander {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        /* Section headers */
+        .stMarkdown h2 {
+            color: #1e40af;
+            border-bottom: 2px solid #dbeafe;
+            padding-bottom: 0.5rem;
+            margin: 1.5rem 0 1rem 0;
+            font-size: 1.5rem;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 1rem;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #eff6ff;
+            color: #1e40af;
+            font-weight: 600;
+        }
+        
+        /* Custom classes */
+        .highlight-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+            border-radius: 0 8px 8px 0;
+            color: #1e40af;
+        }
+        
+        /* Back to Review button */
+        .stButton>button[data-testid="baseButton-secondary"] {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+        }
+        
+        .stButton>button[data-testid="baseButton-secondary"]:hover {
+            background-color: #1d4ed8;
+            color: white;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Load environment variables
 load_dotenv()
 
 # MongoDB connection
 def get_database():
-    # Use your MongoDB connection string from environment variables
     MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
-    
-    # Create a new client and connect to the server
     client = MongoClient(
         MONGODB_URI,
         server_api=ServerApi('1'),
         tls=True,
-        tlsAllowInvalidCertificates=True,  # Only use this in development
+        tlsAllowInvalidCertificates=True,
         retryWrites=True,
         w='majority',
         connectTimeoutMS=30000,
         socketTimeoutMS=30000,
-        serverSelectionTimeoutMS=5000  # Fail fast if can't connect
+        serverSelectionTimeoutMS=5000
     )
-    
-    # Test the connection with more detailed error handling
     try:
-        # The ping command is cheap and does not require auth
         client.admin.command('ping')
-        print("Pinged your deployment. You successfully connected to MongoDB!")
     except Exception as e:
-        error_msg = f"MongoDB connection error: {str(e)}\n"
-        error_msg += "Please check the following:\n"
-        error_msg += "1. Your MongoDB Atlas connection string\n"
-        error_msg += "2. Your network connection\n"
-        error_msg += "3. MongoDB Atlas IP whitelist settings\n"
-        error_msg += "4. MongoDB user permissions"
-        print(error_msg)
-        raise Exception(error_msg)
-    
+        st.error(f"MongoDB connection error: {str(e)}")
+        raise
     return client["lab_survey"]
 
 def save_responses(responses):
     try:
         db = get_database()
         responses["submitted_at"] = datetime.utcnow()
-        
-        # Add a try-except block specifically for the insert operation
-        try:
-            result = db.responses.insert_one(responses)
-            if result.inserted_id:
-                st.success("Successfully saved to database!")
-                return True
-            else:
-                st.error("Failed to save to database: No document was inserted")
-                return False
-                
-        except Exception as insert_error:
-            st.error(f"Error saving to database: {str(insert_error)}")
-            st.error("Please check your MongoDB connection and try again.")
-            return False
-            
+        result = db.responses.insert_one(responses)
+        if result.inserted_id:
+            return True
+        return False
     except Exception as e:
-        st.error(f"Database connection error: {str(e)}")
-        st.error("Please check your MongoDB connection string and network settings.")
+        st.error(f"Error saving to database: {str(e)}")
         return False
 
+# Contact Page
 def contact_page():
-    # Load existing data if available
-    contact_data = st.session_state.contact_info
+    # Add back to review button if coming from review
+    if st.session_state.get('from_review', False):
+        if st.button("← Back to Review", key="back_to_review_contact", type="primary"):
+            st.session_state.page = "review"
+            st.rerun()
+    
+    st.title("Contact Information")
     
     with st.form("contact_form"):
-        st.markdown("### Contact Information")
+        st.markdown("### Primary Contact")
         
+        # Name
         col1, col2 = st.columns(2)
         with col1:
-            name = st.text_input("Full Name", 
-                              value=contact_data.get("name", ""), 
-                              key="name")
+            first_name = st.text_input("First Name*", value="John")
         with col2:
-            email = st.text_input("Email Address", 
-                               value=contact_data.get("email", ""), 
-                               key="email")
-            
-        org_col1, org_col2 = st.columns([2, 1])
-        with org_col1:
-            organization = st.text_input("Organization", 
-                                      value=contact_data.get("organization", ""), 
-                                      key="org")
-        with org_col2:
-            org_type = st.selectbox(
-                "Type",
-                ["", "University/College", "Corporate", "Government", "Non-Profit", "Other"],
-                index=["", "University/College", "Corporate", "Government", "Non-Profit", "Other"].index(
-                    contact_data.get("org_type", "")
-                ) if contact_data.get("org_type") else 0,
-                key="org_type"
-            )
+            last_name = st.text_input("Last Name*", value="Doe")
         
-        submit_col1, submit_col2 = st.columns([1, 1])
-        with submit_col1:
-            if st.form_submit_button("Next"):
-                if not all([name, email, organization, org_type]):
-                    st.warning("Please fill in all required fields.")
-                else:
-                    st.session_state.contact_info = {
-                        "name": name,
-                        "email": email,
-                        "organization": organization,
-                        "org_type": org_type
-                    }
-                    st.session_state.page = "lab_request"
-                    st.rerun()
-
-def lab_request_page():
-    # Load existing data if available
-    lab_data = st.session_state.lab_request
-    
-    # Parse learning objectives from existing data
-    existing_objectives = lab_data.get("learning_objectives", [])
-    cert = any("Certification" in obj for obj in existing_objectives)
-    hands_on = any("Hands-On" in obj for obj in existing_objectives)
-    assessment = any("Assessment" in obj for obj in existing_objectives)
-    workshop = any("Workshop" in obj for obj in existing_objectives)
-    other_obj = any("Other:" in obj for obj in existing_objectives)
-    other_obj_text = next((obj.replace("Other: ", "") for obj in existing_objectives if "Other:" in obj), "")
-    
-    with st.form("lab_request_form"):
-        st.markdown("### Lab Request Details")
+        # Contact Info
+        email = st.text_input("Email*", value="john.doe@example.com")
+        organization = st.text_input("Organization*", value="ACME Corp")
         
-        # First row: Lab name and type
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            lab_name = st.text_input("Lab Name", 
-                                  value=lab_data.get("lab_name", ""), 
-                                  key="lab_name")
-        with col2:
-            lab_type = st.selectbox(
-                "Type",
-                ["Instructional", "Self-Paced", "Assessment", "Other"],
-                index=["Instructional", "Self-Paced", "Assessment", "Other"].index(
-                    lab_data.get("lab_type", "Instructional")
-                ) if lab_data.get("lab_type") else 0,
-                key="lab_type"
-            )
-        
-        # Second row: Persistence and Duration
-        col1, col2 = st.columns(2)
-        with col1:
-            persistence = st.radio(
-                "Persistence",
-                ["Persistent", "Non-Persistent"],
-                index=0 if lab_data.get("persistence") == "Persistent" else 1,
-                key="persistence",
-                help="Persistent saves work between sessions, Non-Persistent resets each time"
-            )
-        with col2:
-            duration = st.selectbox(
-                "Duration",
-                ["1 hour", "4 hours", "1 day", "1 week", "Custom"],
-                index=["1 hour", "4 hours", "1 day", "1 week", "Custom"].index(
-                    lab_data.get("duration", "1 hour")
-                ) if lab_data.get("duration") else 0,
-                key="duration"
-            )
-        
-        # Learning Objectives
-        st.markdown("**Learning Objectives**")
-        objectives_cols = st.columns(3)
-        with objectives_cols[0]:
-            cert = st.checkbox("Certification", value=cert, key="obj_cert")
-            hands_on = st.checkbox("Hands-On", value=hands_on, key="obj_hands_on")
-        with objectives_cols[1]:
-            assessment = st.checkbox("Assessment", value=assessment, key="obj_assessment")
-            workshop = st.checkbox("Workshop", value=workshop, key="obj_workshop")
-        with objectives_cols[2]:
-            other_obj = st.checkbox("Other", value=other_obj, key="obj_other")
-            other_obj_text = st.text_input(
-                "Other (specify)", 
-                value=other_obj_text,
-                key="obj_other_text", 
-                label_visibility="collapsed"
-            )
-        
-        # Complexity and Developer
-        col1, col2 = st.columns(2)
-        with col1:
-            complexity = st.radio(
-                "Complexity",
-                ["Beginner", "Intermediate", "Advanced"],
-                index=["Beginner", "Intermediate", "Advanced"].index(
-                    lab_data.get("complexity", "Beginner")
-                ) if lab_data.get("complexity") else 0,
-                key="complexity"
-            )
-        with col2:
-            developer = st.radio(
-                "Developer",
-                ["ACI", "Customer SME", "Joint"],
-                index=["ACI", "Customer SME", "Joint"].index(
-                    lab_data.get("developer", "ACI")
-                ) if lab_data.get("developer") else 0,
-                key="developer"
-            )
-        
-        # Target Date
-        target_date = st.date_input(
-            "Target Completion Date", 
-            value=datetime.strptime(lab_data.get("target_date"), "%Y-%m-%d").date() 
-                if lab_data.get("target_date") else datetime.now().date(),
-            key="target_date"
+        # Organization Type
+        org_type = st.selectbox(
+            "Type of Organization*",
+            ["", "Educational Institution", "Enterprise", "Government", "Non-Profit", "Other"],
+            index=2  # Pre-select Enterprise
         )
         
-        # Navigation buttons
-        col1, col2, col3 = st.columns([1, 1, 2])
-        with col1:
-            if st.form_submit_button("Back"):
-                st.session_state.page = "contact"
+        submitted = st.form_submit_button("Next: Course Request", type="primary")
+        
+        if submitted:
+            if not all([first_name, last_name, email, organization, org_type]):
+                st.error("Please fill in all required fields (marked with *)")
+            else:
+                st.session_state.contact_info = {
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "email": email,
+                    "organization": organization,
+                    "org_type": org_type
+                }
+                st.session_state.from_review = False
+                st.session_state.page = "course_request"
                 st.rerun()
-        with col2:
-            if st.form_submit_button("Next"):
-                # Collect learning objectives
-                learning_objectives = []
-                if cert: learning_objectives.append("Certification")
-                if hands_on: learning_objectives.append("Hands-On")
-                if assessment: learning_objectives.append("Assessment")
-                if workshop: learning_objectives.append("Workshop")
-                if other_obj and other_obj_text:
-                    learning_objectives.append(f"Other: {other_obj_text}")
-                
-                if not all([lab_name, lab_type, persistence, duration]):
-                    st.warning("Please fill in all required fields.")
-                else:
-                    st.session_state.lab_request = {
-                        "lab_name": lab_name,
-                        "lab_type": lab_type,
-                        "persistence": persistence,
-                        "duration": duration,
-                        "learning_objectives": learning_objectives,
-                        "complexity": complexity,
-                        "developer": developer,
-                        "target_date": target_date.isoformat()
-                    }
-                    st.session_state.page = "hardware"
-                    st.rerun()
 
-def hardware_page():
-    with st.form("hardware_form"):
-        st.markdown("### Hardware Requirements")
+# Course Request Page
+def course_request_page():
+    # Add back to review button if coming from review
+    if st.session_state.get('from_review', False):
+        if st.button("← Back to Review", key="back_to_review_course", type="primary"):
+            st.session_state.page = "review"
+            st.rerun()
+    
+    st.title("Course Request")
+    
+    with st.form("course_form"):
+        st.markdown("### Course Details")
         
-        # System Counts Section
-        st.markdown("**System Counts**")
-        col1, col2, col3 = st.columns(3)
+        course_name = st.text_input("Course Name*", value="Advanced Cloud Infrastructure")
+        
+        col1, col2 = st.columns(2)
         with col1:
-            total_systems = st.number_input(
-                "Total Number of Systems",
-                min_value=1,
-                step=1,
-                key="total_systems"
+            duration_options = ["", "3 months", "6 months", "9 months", "12 months", "18 months", "24 months", "Custom"]
+            course_duration = st.selectbox(
+                "Course Duration*",
+                duration_options,
+                index=4  # Pre-select 12 months
             )
+            
+            # If Custom is selected, show a text input for custom duration
+            if course_duration == "Custom":
+                custom_duration = st.text_input(
+                    "Specify custom duration (e.g., '2 weeks', '1 month', etc.)*",
+                    value="6 weeks"
+                )
+                if custom_duration:
+                    course_duration = f"Custom: {custom_duration}"
         with col2:
-            pre_installed = st.number_input(
-                "Pre-installed (How Many?)",
-                min_value=0,
-                step=1,
-                key="pre_installed"
-            )
-        with col3:
-            boot_iso = st.number_input(
-                "Boot from ISO (How Many?)",
-                min_value=0,
-                step=1,
-                key="boot_iso"
-            )
+            num_labs = st.number_input("Number of Labs*", min_value=1, step=1, value=3)
         
-        # CPU Configuration
-        st.markdown("**CPU Configuration**")
-        cpu_per_system = st.radio(
-            "CPU Cores per System",
-            ["2", "4", "8", "16", "Varies by System (specify below)"],
-            key="cpu_per_system"
+        developer = st.radio(
+            "Who will develop the labs?*",
+            ["ACI", "Customer SME", "Joint Development"],
+            index=0  # Pre-select ACI
         )
         
-        if cpu_per_system == "Varies by System (specify below)":
-            cpu_notes = st.text_area("Specify CPU requirements per system:", key="cpu_notes")
+        description = st.text_area(
+            "Brief Description of Course*",
+            value="This course covers advanced cloud infrastructure concepts including virtualization, networking, and security."
+        )
         
-        # RAM Configuration
-        st.markdown("**Memory Configuration**")
-        ram_col1, ram_col2 = st.columns([1, 3])
-        with ram_col1:
-            ram_per_system = st.radio(
-                "RAM per System",
-                ["2GB", "4GB", "8GB", "16GB", "Other (specify)"],
-                key="ram_per_system"
-            )
+        st.markdown("### Learning Objectives")
+        certification = st.checkbox("Certification Support", value=True)
+        hands_on = st.checkbox("Hands-On Exercises", value=True)
+        assessment = st.checkbox("Assessment/Testing", value=True)
+        other_objectives = st.text_input(
+            "Other Objectives (please specify)",
+            value="Real-world scenario based labs"
+        )
         
-        # Storage Configuration
-        st.markdown("**Storage Configuration**")
         col1, col2 = st.columns(2)
         with col1:
-            hdd_partitions = st.number_input(
-                "Number of Partitions per System",
-                min_value=1,
-                max_value=10,
-                step=1,
-                key="hdd_partitions"
-            )
-        with col2:
-            hdd_size = st.selectbox(
-                "Hard Drive Space per Partition",
-                ["20GB", "40GB", "60GB", "100GB", "200GB", "Other (specify)"],
-                key="hdd_size"
-            )
+            submitted = st.form_submit_button("Next: Lab Details", type="primary")
         
-        # Additional Hardware Features
-        st.markdown("**Additional Hardware Features**")
+        if submitted:
+            if not all([course_name, course_duration, developer, description]):
+                st.error("Please fill in all required fields (marked with *)")
+            elif not any([certification, hands_on, assessment, other_objectives]):
+                st.error("Please select at least one learning objective")
+            else:
+                st.session_state.course_info = {
+                    "course_name": course_name,
+                    "course_duration": course_duration,
+                    "num_labs": num_labs,
+                    "developer": developer,
+                    "description": description,
+                    "objectives": {
+                        "certification": certification,
+                        "hands_on": hands_on,
+                        "assessment": assessment,
+                        "other": other_objectives if other_objectives else None
+                    },
+                    "labs": [{} for _ in range(num_labs)]
+                }
+                st.session_state.from_review = False
+                st.session_state.page = "lab_details"
+                st.session_state.current_lab = 1
+                st.rerun()
+
+# Lab Details Page
+def lab_details_page():
+    # Add back to review button if coming from review
+    if st.session_state.get('from_review', False):
+        if st.button("← Back to Review", key="back_to_review_lab", type="primary"):
+            st.session_state.page = "review"
+            st.rerun()
+    
+    num_labs = st.session_state.course_info["num_labs"]
+    
+    # Main form container with title
+    with st.container():
+        st.title(f"Lab Configuration ({st.session_state.current_lab} of {num_labs})")
+        st.markdown("*Complete the details for this lab below*")
+        
+        # Regular form elements
+        lab_name = st.text_input(
+            f"Name of Lab {st.session_state.current_lab}*",
+            value=f"Lab {st.session_state.current_lab}: Cloud Infrastructure Setup",
+            key=f"lab_name_{st.session_state.current_lab}"
+        )
+        
         col1, col2 = st.columns(2)
         with col1:
-            cd_rom = st.radio(
-                "CD-ROM Required",
-                ["Yes", "No"],
-                key="cd_rom"
+            lab_type = st.radio(
+                "Type of Lab*",
+                ["Instructional", "Self-Paced"],
+                index=0,  # Pre-select Instructional
+                key=f"lab_type_{st.session_state.current_lab}"
             )
         with col2:
-            nested_virt = st.multiselect(
-                "Nested Virtualization Required",
-                ["GNS3", "Hyper-V", "Docker", "Other"],
-                key="nested_virt"
+            persistence = st.radio(
+                "Persistence*",
+                ["Non-Persistent (Default, Fresh instance each time)", "Persistent (Work saved)"],
+                index=0,  # Default to Non-Persistent
+                key=f"persistence_{st.session_state.current_lab}"
             )
         
-        # Systems by OS
-        st.markdown("**Systems by OS**")
+        if "Persistent" in persistence:
+            duration = st.session_state.course_info["course_duration"]
+            st.info(f"Lab will be persistent for the course duration: {duration}")
         
-        # Windows Systems
-        st.markdown("**Windows Systems**")
-        windows_systems = []
-        windows_cols = st.columns(3)
-        with windows_cols[0]:
-            win10 = st.number_input("Windows 10", min_value=0, step=1, key="win10")
-            if win10 > 0:
-                windows_systems.append({"version": "Windows 10", "count": win10})
-        with windows_cols[1]:
-            win11 = st.number_input("Windows 11", min_value=0, step=1, key="win11")
-            if win11 > 0:
-                windows_systems.append({"version": "Windows 11", "count": win11})
-        with windows_cols[2]:
-            win_server = st.number_input("Windows Server", min_value=0, step=1, key="win_server")
-            if win_server > 0:
-                windows_systems.append({"version": "Windows Server", "count": win_server})
-        other_win = st.text_input("Other Windows versions (specify version and count):", key="other_win")
+        complexity = st.selectbox(
+            "Complexity Level*",
+            options=["", "Beginner", "Intermediate", "Advanced"],
+            index=2,  # Pre-select Intermediate
+            key=f"complexity_{st.session_state.current_lab}"
+        )
         
-        # Linux Systems
-        st.markdown("**Linux Systems**")
-        linux_systems = []
-        linux_cols = st.columns(3)
-        with linux_cols[0]:
-            ubuntu = st.number_input("Ubuntu", min_value=0, step=1, key="ubuntu")
-            if ubuntu > 0:
-                linux_systems.append({"distro": "Ubuntu", "count": ubuntu})
-        with linux_cols[1]:
-            centos = st.number_input("CentOS", min_value=0, step=1, key="centos")
-            if centos > 0:
-                linux_systems.append({"distro": "CentOS", "count": centos})
-        with linux_cols[2]:
-            kali = st.number_input("Kali Linux", min_value=0, step=1, key="kali")
-            if kali > 0:
-                linux_systems.append({"distro": "Kali Linux", "count": kali})
-        other_linux = st.text_input("Other Linux distros (specify distro and count):", key="other_linux")
+        # Set default completion date to 30 days from now
+        from datetime import datetime, timedelta
+        default_date = datetime.now() + timedelta(days=30)
+        completion_date = st.date_input(
+            "Requested Completion Date*",
+            value=default_date,
+            key=f"completion_date_{st.session_state.current_lab}"
+        )
         
-        # Other Systems
-        st.markdown("**Other Systems**")
-        other_systems = []
-        other_cols = st.columns(2)
-        with other_cols[0]:
-            openvas = st.number_input("OpenVAS", min_value=0, step=1, key="openvas")
-            if openvas > 0:
-                other_systems.append({"name": "OpenVAS", "count": openvas})
-            vyos = st.number_input("VyOS", min_value=0, step=1, key="vyos")
-            if vyos > 0:
-                other_systems.append({"name": "VyOS", "count": vyos})
-        with other_cols[1]:
-            pfsense = st.number_input("pfSense", min_value=0, step=1, key="pfsense")
-            if pfsense > 0:
-                other_systems.append({"name": "pfSense", "count": pfsense})
-            other_os = st.text_input("Other (specify):", key="other_os")
+        # VM Configuration Section - Collapsible
+        with st.expander("### Virtual Machine Configurations", expanded=True):
+            # Initialize num_vms in session state if not exists
+            if 'num_vms' not in st.session_state:
+                st.session_state.num_vms = 2  # Default to 2 VMs
+            
+            # Number input for VM count
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                new_num_vms = st.number_input(
+                    "Number of VMs Required*",
+                    min_value=1,
+                    max_value=20,
+                    step=1,
+                    value=st.session_state.num_vms,
+                    key="num_vms_input",
+                    help="Hit 'Update' at the bottom to change the number of VMs required for this lab"
+                )
+            
+            # Update the VM count if changed
+            if new_num_vms != st.session_state.num_vms:
+                st.session_state.num_vms = new_num_vms
+                st.rerun()
+            
+            # Add a note about the auto-update
+            st.markdown("**<span style='font-size: 14px;'>The number of VMs will change after you press the update button below</span>**", unsafe_allow_html=True)
+            
+            # Store VM details for this lab
+            vms = []
+            
+            # Default VM configurations
+            default_vms = [
+                {
+                    "os": "Ubuntu 20.04",
+                    "role": "Web Server",
+                    "cpus": 2,
+                    "ram": 4,
+                    "drives": [50],
+                    "network_type": "NAT"
+                },
+                {
+                    "os": "Windows Server 2019",
+                    "role": "Database Server",
+                    "cpus": 4,
+                    "ram": 8,
+                    "drives": [100, 50],
+                    "network_type": "Bridged"
+                }
+            ]
+            
+            # Display all VM configurations
+            st.markdown("---")  # Visual separator
+            for i in range(1, st.session_state.num_vms + 1):
+                # Add a visual separator between VMs
+                if i > 1:
+                    st.markdown("---")
+                
+                st.markdown(f"#### VM {i} Configuration")
+                
+                # Get default values if available
+                default_vm = default_vms[i-1] if i <= len(default_vms) else {
+                    "os": "Ubuntu 20.04",
+                    "role": "",
+                    "cpus": 2,
+                    "ram": 4,
+                    "drives": [50],
+                    "network_type": "NAT"
+                }
+                
+                # VM Details
+                col1, col2 = st.columns(2)
+                with col1:
+                    os = st.selectbox(
+                        f"Operating System (VM {i})*",
+                        ["", "Windows 10", "Windows Server 2019", "Ubuntu 20.04", "CentOS 8", "Other"],
+                        index=["", "Windows 10", "Windows Server 2019", "Ubuntu 20.04", "CentOS 8", "Other"].index(default_vm["os"]) if default_vm["os"] in ["", "Windows 10", "Windows Server 2019", "Ubuntu 20.04", "CentOS 8", "Other"] else 0,
+                        key=f"os_{i}"
+                    )
+                with col2:
+                    role = st.text_input(
+                        f"Role (e.g., Web Server, Database) (VM {i})*",
+                        value=default_vm["role"],
+                        key=f"role_{i}"
+                    )
+                
+                # Resources
+                col1, col2 = st.columns(2)
+                with col1:
+                    cpus = st.number_input(
+                        f"Number of vCPUs (VM {i})*",
+                        min_value=1,
+                        value=default_vm["cpus"],
+                        step=1,
+                        key=f"cpus_{i}"
+                    )
+                with col2:
+                    ram = st.number_input(
+                        f"RAM (GB) (VM {i})*",
+                        min_value=1,
+                        value=default_vm["ram"],
+                        step=1,
+                        key=f"ram_{i}"
+                    )
+                
+                # Storage
+                st.markdown("**Storage Configuration**")
+                num_drives = st.number_input(
+                    f"Number of Hard Drives (VM {i})*",
+                    min_value=1,
+                    value=len(default_vm["drives"]),
+                    step=1,
+                    key=f"num_drives_{i}"
+                )
+                
+                # Dynamic drive size inputs
+                drive_sizes = []
+                for j in range(1, num_drives + 1):
+                    default_size = default_vm["drives"][j-1] if j <= len(default_vm["drives"]) else 50
+                    drive_size = st.number_input(
+                        f"  - Drive {j} Size (GB) (VM {i})*",
+                        min_value=10,
+                        value=default_size,
+                        step=10,
+                        key=f"drive_{i}_{j}_size"
+                    )
+                    drive_sizes.append(drive_size)
+                
+                # Network
+                st.markdown("**Network Configuration**")
+                network_type = st.selectbox(
+                    f"Network Type (VM {i})*",
+                    ["NAT", "Bridged", "Host-only", "Internal"],
+                    index=["NAT", "Bridged", "Host-only", "Internal"].index(default_vm["network_type"]) if default_vm["network_type"] in ["NAT", "Bridged", "Host-only", "Internal"] else 0,
+                    key=f"vm_network_type_{i}"  # Changed key to be more specific
+                )
+                
+                # Add VM to list
+                vms.append({
+                    "os": os,
+                    "role": role,
+                    "cpus": cpus,
+                    "ram": ram,
+                    "drives": drive_sizes,
+                    "network_type": network_type
+                })
         
-        # Network Requirements
-        st.markdown("**Network Requirements**")
-        
-        # Network Type
+        # Network Requirements (outside VM expander)
+        st.markdown("### Network Requirements")
         network_type = st.radio(
-            "Network Type",
+            "Network Type*",
             ["Stand-Alone", "Server/Client", "Peer-to-Peer", "Domain"],
-            key="network_type"
+            key=f"lab_network_type_{st.session_state.current_lab}"  # Changed key to be more specific
         )
         
-        # Network Configuration
-        net_cols = st.columns(2)
-        with net_cols[0]:
-            num_subnets = st.number_input(
-                "Number of Subnets",
-                min_value=1,
-                step=1,
-                key="num_subnets"
-            )
-        with net_cols[1]:
-            internet_access = st.radio(
-                "Internet Access",
-                ["Yes", "No"],
-                key="internet_access"
-            )
+        num_subnets = st.number_input(
+            "Number of Subnets*",
+            min_value=1,
+            value=1,
+            step=1,
+            key=f"num_subnets_{st.session_state.current_lab}"
+        )
+        
+        internet_access = st.checkbox("Internet Access Required")
         
         # Other Requirements
-        st.markdown("**Other Requirements**")
-        other_reqs = st.text_area(
-            "Any specialized requirements not listed in the previous sections:",
-            key="other_reqs",
-            height=80,
-            help="Please specify any additional requirements or special configurations needed"
+        st.markdown("### Other Requirements")
+        special_requirements = st.text_area(
+            "Any specialized requirements not listed above"
         )
         
-        # Notes - Increased height to 100px to meet minimum requirements
-        notes = st.text_area(
-            "Additional Notes or Comments",
-            key="hardware_notes",
-            height=100
-        )
-        
-        # Navigation buttons
-        col1, col2, col3 = st.columns([1, 1, 2])
-        
-        # Single form submission handler
-        submitted = st.form_submit_button("Submit Survey")
-        back_clicked = st.form_submit_button("Back")
-        
-        if back_clicked:
-            st.session_state.page = "lab_request"
-            st.rerun()
-            
-        if submitted:
-            # Process Windows systems
-            if 'other_win' in locals() and other_win:
-                windows_systems.append({"version": f"Other: {other_win}", "count": 1})
-            
-            # Process Linux systems
-            if 'other_linux' in locals() and other_linux:
-                linux_systems.append({"distro": f"Other: {other_linux}", "count": 1})
-            
-            # Process other OS
-            if 'other_os' in locals() and other_os:
-                other_systems.append({"name": f"Other: {other_os}", "count": 1})
-            
-            # Get cpu_notes if it exists
-            cpu_notes_value = cpu_notes if 'cpu_notes' in locals() else ""
-            
-            hardware_info = {
-                "system_counts": {
-                    "total_systems": total_systems,
-                    "pre_installed": pre_installed,
-                    "boot_iso": boot_iso
-                },
-                "cpu_config": {
-                    "cores_per_system": cpu_per_system,
-                    "notes": cpu_notes_value if cpu_per_system == "Varies by System (specify below)" else ""
-                },
-                "memory_config": {
-                    "ram_per_system": ram_per_system
-                },
-                "storage_config": {
-                    "partitions_per_system": hdd_partitions if 'hdd_partitions' in locals() else 1,
-                    "partition_size": hdd_size if 'hdd_size' in locals() else ""
-                },
-                "additional_features": {
-                    "cd_rom": cd_rom == "Yes" if 'cd_rom' in locals() else False,
-                    "nested_virtualization": nested_virt if 'nested_virt' in locals() else False
-                },
-                "systems_by_os": {
-                    "windows": windows_systems if 'windows_systems' in locals() else [],
-                    "linux": linux_systems if 'linux_systems' in locals() else [],
-                    "other": other_systems if 'other_systems' in locals() else []
-                },
-                "network_requirements": {
-                    "network_type": network_type,
-                    "number_of_subnets": num_subnets,
-                    "internet_access": internet_access == "Yes"
-                },
-                "other_requirements": other_reqs,
-                "notes": notes
-            }
-            
-            # Store hardware info in session state and go to summary
-            st.session_state.hardware_info = hardware_info
-            st.session_state.page = "summary"
-            st.rerun()
-
-def confirmation_page():
-    st.header("Thank You!")
-    st.balloons()
-    st.success("Your survey has been submitted successfully!")
+    # Navigation buttons
+    col1, col2, col3 = st.columns([1, 1, 1])
     
-    if st.button("Submit Another Response"):
-        # Clear session state and start over
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+    # Check if all required VM fields are filled
+    all_vms_filled = all([
+        lab_name,
+        completion_date,
+        all([vm.get('os') for vm in vms])  # Check if all VMs have an OS selected
+    ])
+    
+    # Helper function to save lab info
+    def save_lab_info():
+        return {
+            "lab_name": lab_name,
+            "lab_type": lab_type,
+            "persistence": persistence,
+            "complexity": complexity,
+            "completion_date": completion_date.isoformat(),
+            "vms": vms,
+            "network_type": network_type,
+            "num_subnets": num_subnets,
+            "internet_access": internet_access,
+            "special_requirements": special_requirements if special_requirements else None
+        }
+    
+    # Previous/Back button
+    with col1:
+        if st.session_state.get('from_review', False):
+            if st.button("← Back to Review", type="secondary"):
+                st.session_state.page = "review"
+                st.rerun()
+        else:
+            if st.button("Previous"):
+                st.session_state.page = "course_request"
+                st.rerun()
+    
+    # Update button
+    with col2:
+        if st.button("Update"):
+            # Save current lab details without moving to the next page
+            lab_info = save_lab_info()
+            
+            # Update the current lab in the session state
+            lab_index = st.session_state.current_lab - 1
+            if len(st.session_state.course_info["labs"]) > lab_index:
+                st.session_state.course_info["labs"][lab_index] = lab_info
+            else:
+                st.session_state.course_info["labs"].append(lab_info)
+            
+            st.rerun()
+    
+    # Next/Review button with lab counter
+    with col3:
+        # Create a container for the button and counter
+        button_col, counter_col = st.columns([5, 2])
+        
+        with button_col:
+            next_button_text = "Next" if st.session_state.current_lab < num_labs else "Review"
+            if all_vms_filled:
+                if st.button(next_button_text, type="primary", use_container_width=True):
+                    # Save current lab details
+                    lab_info = save_lab_info()
+                    
+                    # Update or add to labs list
+                    lab_index = st.session_state.current_lab - 1
+                    if len(st.session_state.course_info["labs"]) > lab_index:
+                        st.session_state.course_info["labs"][lab_index] = lab_info
+                    else:
+                        st.session_state.course_info["labs"].append(lab_info)
+                    
+                    # Move to next lab or to review
+                    if st.session_state.current_lab < num_labs:
+                        st.session_state.current_lab += 1
+                    else:
+                        st.session_state.from_review = False
+                        st.session_state.page = "review"
+                    st.rerun()
+            else:
+                if st.button(next_button_text, disabled=True, use_container_width=True):
+                    pass  # Disabled button
+                st.warning("Please complete all required fields")
+        
+        # Add the lab counter (e.g., "2/3" or "3/3")
+        with counter_col:
+            st.markdown(
+                f"<div style='height: 38px; display: flex; align-items: center; justify-content: center; background: #f0f2f6; border-radius: 0.5rem;'>"
+                f"<span style='font-size: 0.9rem; font-weight: 600; color: #4b5563;'>{st.session_state.current_lab} of {num_labs}</span>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+
+# Review Page
+def review_page():
+    st.title("Review Your Submission")
+    
+    # Contact Information Section
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.markdown("## 👤 Contact Information")
+    with col2:
+        st.write("")
+        if st.button("✏️ Edit", key="edit_contact_btn"):
+            st.session_state.page = "contact"
+            st.session_state.from_review = True
+            st.rerun()
+    
+    contact = st.session_state.contact_info
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Name**")
+        st.write(f"{contact['first_name']} {contact['last_name']}")
+        
+        st.markdown("**Email**")
+        st.write(contact['email'])
+    
+    with col2:
+        st.markdown("**Organization**")
+        st.write(contact['organization'])
+        
+        st.markdown("**Organization Type**")
+        st.write(contact['org_type'])
+    
+    st.markdown("---")
+    
+    # Course Information Section
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.markdown("## 📚 Course Information")
+    with col2:
+        st.write("")
+        if st.button("✏️ Edit", key="edit_course_btn"):
+            st.session_state.page = "course_request"
+            st.session_state.from_review = True
+            st.rerun()
+    
+    course = st.session_state.course_info
+    objectives = course["objectives"]
+    
+    st.markdown(f"**Course Name:** {course['course_name']}")
+    st.markdown(f"**Duration:** {course['course_duration']}")
+    st.markdown(f"**Developer:** {course['developer']}")
+    
+    st.markdown("**Learning Objectives:**")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"- Certification Support: {'✅' if objectives.get('certification') else '❌'}")
+        st.markdown(f"- Hands-On Exercises: {'✅' if objectives.get('hands_on') else '❌'}")
+    with col2:
+        st.markdown(f"- Assessment/Testing: {'✅' if objectives.get('assessment') else '❌'}")
+        if objectives.get('other'):
+            st.markdown(f"- {objectives['other']}")
+    
+    st.markdown("---")
+    
+    # Lab Details Section
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.markdown("## 🔬 Lab Details")
+    with col2:
+        st.write("")
+        if st.button("✏️ Edit", key="edit_labs_btn"):
+            st.session_state.page = "lab_details"
+            st.session_state.current_lab = 1
+            st.session_state.from_review = True
+            st.rerun()
+    
+    for i, lab in enumerate(course["labs"], 1):
+        with st.expander(f"🔍 Lab {i}: {lab.get('lab_name', 'Unnamed Lab')}", expanded=False):
+            # Lab Info
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown("**Type**")
+                st.write(lab.get('lab_type', 'N/A'))
+            with col2:
+                st.markdown("**Persistence**")
+                st.write(lab.get('persistence', 'N/A'))
+            with col3:
+                st.markdown("**Complexity**")
+                st.write(lab.get('complexity', 'N/A'))
+            
+            st.markdown("**Requested Completion:**")
+            st.write(lab.get('completion_date', 'Not specified'))
+            
+            # VMs Section
+            st.markdown("**Virtual Machines:**")
+            for j, vm in enumerate(lab.get('vms', []), 1):
+                with st.container():
+                    st.markdown(f"**VM {j}:** {vm.get('role', 'Unspecified Role')}")
+                    
+                    col1, col2 = st.columns([1, 2])
+                    with col1:
+                        st.markdown(f"- **OS:** {vm.get('os', 'N/A')}")
+                        st.markdown(f"- **CPUs:** {vm.get('cpus', 'N/A')}")
+                        st.markdown(f"- **RAM:** {vm.get('ram', 'N/A')} GB")
+                    with col2:
+                        drives = ', '.join([f"{d}GB" for d in vm.get('drives', [])]) or 'N/A'
+                        st.markdown(f"- **Storage:** {drives}")
+                        st.markdown(f"- **Network:** {vm.get('network_type', 'N/A')}")
+                
+                if j < len(lab.get('vms', [])):
+                    st.markdown("---")
+    
+    # Submit Form
+    st.markdown("---")
+    if st.button("✅ Submit Request", type="primary", use_container_width=True):
+        # Combine all data
+        submission = {
+            "contact_info": st.session_state.contact_info,
+            "course_info": st.session_state.course_info,
+            "submitted_at": datetime.utcnow()
+        }
+        
+        # Save to database
+        if save_responses(submission):
+            st.session_state.page = "confirmation"
+            st.rerun()
+        else:
+            st.error("Failed to save submission. Please try again.")
+
+# Confirmation Page
+def confirmation_page():
+    st.title("Thank You!")
+    st.balloons()
+    st.success("Your lab request has been submitted successfully.")
+    st.info("Our team will review your request and get back to you soon.")
+    
+    if st.button("Start New Request"):
+        # Reset the session state
+        st.session_state.clear()
         st.session_state.page = "contact"
         st.rerun()
 
-def format_systems_list(systems, key_name):
-    if not systems:
-        return "None"
-    return ", ".join([f"{item[key_name]} (x{item['count']})" for item in systems])
-
-def summary_page():
-    st.title("Review Your Submission")
-    st.write("Please review all the information below before submitting.")
-    
-    # Add custom CSS for better button styling
-    st.markdown("""
-    <style>
-    .edit-button {
-        border: 1px solid #4CAF50 !important;
-        color: white !important;
-        background-color: #4CAF50 !important;
-        padding: 0.5rem 1rem !important;
-        border-radius: 4px !important;
-        margin: 0.5rem 0 !important;
-        font-size: 0.9rem !important;
-    }
-    .edit-button:hover {
-        background-color: #45a049 !important;
-    }
-    .nav-button {
-        margin: 5px !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Helper function to create edit button
-    def create_edit_button(section):
-        button_key = f"edit_{section.lower().replace(' ', '_')}"
-        if st.button(f"✏️ Edit {section}", 
-                   key=button_key,
-                   help=f"Click to edit {section}",
-                   use_container_width=True,
-                   type="primary" if section == "Contact Information" else "secondary"):
-            st.session_state.edit_section = section
-            st.session_state.from_summary = True
-            st.session_state._rerun = True
-            
-    # Contact Information
-    with st.expander("Contact Information", expanded=True):
-        contact = st.session_state.contact_info
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            st.write(f"**Name:** {contact.get('name', '')}")
-            st.write(f"**Email:** {contact.get('email', '')}")
-            st.write(f"**Organization:** {contact.get('organization', '')}")
-            st.write(f"**Organization Type:** {contact.get('org_type', '')}")
-        with col2:
-            create_edit_button("Contact Information")
-    
-    # Lab Request Details
-    with st.expander("Lab Request Details", expanded=True):
-        lab = st.session_state.lab_request
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            st.write(f"**Lab Name:** {lab.get('lab_name', '')}")
-            st.write(f"**Lab Type:** {lab.get('lab_type', '')}")
-            st.write(f"**Persistence:** {lab.get('persistence', '')}")
-            st.write(f"**Duration:** {lab.get('duration', '')}")
-            st.write(f"**Complexity:** {lab.get('complexity', '')}")
-            st.write(f"**Developer:** {lab.get('developer', '')}")
-            
-            st.write("**Learning Objectives:**")
-            for obj in lab.get('learning_objectives', []):
-                st.write(f"- {obj}")
-        with col2:
-            create_edit_button("Lab Request")
-    
-    # Hardware Requirements
-    with st.expander("Hardware Requirements", expanded=True):
-        hw = st.session_state.hardware_info
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            st.write("**System Counts:**")
-            st.write(f"- Total Systems: {hw.get('system_counts', {}).get('total_systems', 0)}")
-            st.write(f"- Pre-installed: {hw.get('system_counts', {}).get('pre_installed', 0)}")
-            st.write(f"- Boot from ISO: {hw.get('system_counts', {}).get('boot_iso', 0)}")
-            
-            st.write("**CPU Configuration:**")
-            st.write(f"- Cores per System: {hw.get('cpu_config', {}).get('cores_per_system', '')}")
-            if hw.get('cpu_config', {}).get('notes'):
-                st.write(f"  - Notes: {hw['cpu_config']['notes']}")
-            
-            st.write("**Memory Configuration:**")
-            st.write(f"- RAM per System: {hw.get('memory_config', {}).get('ram_per_system', '')}")
-            
-            st.write("**Storage Configuration:**")
-            st.write(f"- Partitions per System: {hw.get('storage_config', {}).get('partitions_per_system', '')}")
-            st.write(f"- Partition Size: {hw.get('storage_config', {}).get('partition_size', '')}")
-            
-            st.write("**Windows Systems:**")
-            for win in hw.get('systems_by_os', {}).get('windows', []):
-                st.write(f"- {win.get('version', '')}: {win.get('count', 0)}")
-                
-            st.write("**Linux Systems:**")
-            for linux in hw.get('systems_by_os', {}).get('linux', []):
-                st.write(f"- {linux.get('distro', '')}: {linux.get('count', 0)}")
-                
-            st.write("**Other Systems:**")
-            for other in hw.get('systems_by_os', {}).get('other', []):
-                st.write(f"- {other.get('name', '')}: {other.get('count', 0)}")
-            
-            st.write("**Network Requirements:**")
-            st.write(f"- Network Type: {hw.get('network_requirements', {}).get('network_type', '')}")
-            st.write(f"- Number of Subnets: {hw.get('network_requirements', {}).get('number_of_subnets', '')}")
-            st.write(f"- Internet Access: {'Yes' if hw.get('network_requirements', {}).get('internet_access', False) else 'No'}")
-            
-            if hw.get('other_requirements'):
-                st.write("**Other Requirements:**")
-                st.write(hw['other_requirements'])
-                
-            if hw.get('notes'):
-                st.write("**Notes:**")
-                st.write(hw['notes'])
-        with col2:
-            create_edit_button("Hardware")
-    
-    # Handle edit section navigation
-    if hasattr(st.session_state, 'edit_section'):
-        # Add a small delay to ensure the button click is processed
-        import time
-        time.sleep(0.1)  # Small delay to ensure state is updated
-        
-        if st.session_state.edit_section == "Contact Information":
-            st.session_state.page = "contact"
-        elif st.session_state.edit_section == "Lab Request":
-            st.session_state.page = "lab_request"
-        elif st.session_state.edit_section == "Hardware":
-            st.session_state.page = "hardware"
-        
-        # Mark that we're coming from the summary page
-        st.session_state.from_summary = True
-        
-        # Clear the edit section and force a rerun
-        section = st.session_state.edit_section
-        del st.session_state.edit_section
-        st.session_state._rerun = True
-        st.rerun()
-    
-    # Navigation section at the bottom of the summary page
-    st.markdown("---")
-    
-    # Create two columns for the buttons
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        if st.button("← Back to Hardware", 
-                    key="back_to_hardware",
-                    use_container_width=True):
-            st.session_state.page = "hardware"
-            st.session_state.from_summary = False
-            st.rerun()
-            
-    with col2:
-        if st.button("✅ Submit Survey", 
-                    key="submit_survey",
-                    type="primary",
-                    use_container_width=True):
-            # Combine all data
-            response = {
-                "contact_info": st.session_state.contact_info,
-                "lab_request": st.session_state.lab_request,
-                "hardware_info": st.session_state.hardware_info,
-                "submitted_at": datetime.utcnow()
-            }
-            
-            # Save to MongoDB
-            if save_responses(response):
-                st.session_state.page = "confirmation"
-                st.rerun()
-
+# Initialize Session State
 def initialize_session_state():
+    if "page" not in st.session_state:
+        st.session_state.page = "contact"
+    
+    # Initialize empty dictionaries for form data
     if "contact_info" not in st.session_state:
         st.session_state.contact_info = {}
-    if "lab_request" not in st.session_state:
-        st.session_state.lab_request = {}
-    if "hardware_info" not in st.session_state:
-        st.session_state.hardware_info = {}
-
-def main():
-    # Set page config - must be the first Streamlit command
-    st.set_page_config(
-        page_title="Lab Survey App",
-        layout="wide",
-        initial_sidebar_state="collapsed"
-    )
     
-    # Inject custom CSS first thing to hide UI elements
-    st.markdown("""
+    if "course_info" not in st.session_state:
+        st.session_state.course_info = {}
+
+# Main App
+def main():
+    # Initialize session state
+    initialize_session_state()
+    
+    # Hide Streamlit menu and footer
+    hide_streamlit_style = """
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .viewerBadge_container__1QSob {display: none;}
     </style>
-    """, unsafe_allow_html=True)
+    """
+    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
     
-    # Initialize session state
-    initialize_session_state()
-    
+    # Add simple header with title only
     st.markdown("""
-    <style>
-        .main .block-container {
-            padding: 0.5rem 0.5rem !important;
-            max-width: 700px !important;
-        }
-        .stForm {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 0.5rem 0;
-        }
-        .stButton>button {
-            width: 100%;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.9rem;
-        }
-        .stProgress > div > div > div > div {
-            background-color: #4CAF50;
-            height: 4px !important;
-        }
-        .stTextInput>div>div>input, 
-        .stTextArea>div>div>textarea,
-        .stSelectbox>div>div>div>div,
-        .stNumberInput>div>div>input {
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.9rem;
-            min-height: 30px;
-        }
-        .stTextArea>div>div>textarea {
-            min-height: 60px !important;
-        }
-        .stRadio > div {
-            gap: 0.5rem;
-            font-size: 0.9rem;
-        }
-        .stMultiSelect > div > div > div > div {
-            padding: 0.25rem 0.5rem;
-        }
-        .stDateInput>div>div>input {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.9rem;
-        }
-        h1 {
-            font-size: 1.5rem !important;
-            margin: 0.5rem 0 0.5rem 0 !important;
-        }
-        h2, h3, h4 {
-            margin: 0.75rem 0 0.5rem 0 !important;
-        }
-        .stMarkdown p {
-            margin: 0.25rem 0 !important;
-        }
-    </style>
+    <div class="main-header">
+        <h1 class="header-title">Product Submission Request</h1>
+    </div>
     """, unsafe_allow_html=True)
     
-    # Initialize session state
-    if "page" not in st.session_state:
-        st.session_state.page = "contact"
-    
-    # Show progress bar
-    pages = ["contact", "lab_request", "hardware", "summary", "confirmation"]
-    progress = (pages.index(st.session_state.page) + 1) / len(pages)
-    st.progress(progress)
-    
-    # Display current page
+    # Page routing
     if st.session_state.page == "contact":
         contact_page()
-    elif st.session_state.page == "lab_request":
-        lab_request_page()
-    elif st.session_state.page == "hardware":
-        hardware_page()
-    elif st.session_state.page == "summary":
-        summary_page()
+    elif st.session_state.page == "course_request":
+        course_request_page()
+    elif st.session_state.page == "lab_details":
+        lab_details_page()
+    elif st.session_state.page == "review":
+        review_page()
     elif st.session_state.page == "confirmation":
         confirmation_page()
+    else:
+        contact_page()  # Default to contact page
 
 if __name__ == "__main__":
     main()
