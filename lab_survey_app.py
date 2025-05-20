@@ -72,16 +72,18 @@ st.markdown("""
             margin: 1rem 0 0.5rem 0;
         }
         
-        /* Buttons */
+        /* Buttons - make more compact */
         .stButton>button {
             background-color: #2563eb;
             color: white;
-            border-radius: 6px;
+            border-radius: 4px;
             border: none;
-            padding: 0.5rem 1.25rem;
+            padding: 0.3rem 1rem;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: all 0.2s;
+            height: auto;
+            min-height: 36px;
         }
         
         .stButton>button:hover {
@@ -90,40 +92,44 @@ st.markdown("""
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        /* Form elements */
+        /* Form elements - make more compact */
         .stTextInput>div>div>input, 
         .stTextArea>div>div>textarea,
         .stSelectbox>div>div>div>div,
         .stNumberInput>div>div>input,
         .stDateInput>div>div>input {
             border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 0.5rem 0.75rem;
-            font-size: 0.9rem;
+            border-radius: 4px;
+            padding: 0.35rem 0.6rem;
+            font-size: 0.85rem;
+            min-height: 36px;
+            line-height: 1.3;
         }
         
-        /* Form labels */
+        /* Form labels - make more compact */
         label {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: 500;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.15rem;
             display: block;
+            color: #4b5563;
         }
         
-        /* Cards and containers */
+        /* Cards and containers - make more compact */
         .stExpander {
             background-color: white;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 6px;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
         
-        /* Adjust expander header */
+        /* Adjust expander header - make more compact */
         .stExpander .st-emotion-cache-sh2krr p {
-            font-size: 1rem;
+            font-size: 0.9rem;
             margin: 0;
+            font-weight: 500;
         }
         
         /* Adjust expander content */
