@@ -38,13 +38,38 @@ st.markdown("""
             background-color: #f8fafc;
             color: #1e293b;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            padding: 2rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            padding: 1.5rem;
         }
         
         /* Headers */
-        h1, h2, h3, h4, h5, h6 {
+        h1 {
             color: #1e40af;
             font-weight: 600;
+            font-size: 1.75rem;
+            margin: 0 0 1rem 0;
+        }
+        
+        h2 {
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+        
+        h3 {
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 1.25rem;
+            margin: 1.25rem 0 0.75rem 0;
+        }
+        
+        h4, h5, h6 {
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 1rem 0 0.5rem 0;
         }
         
         /* Buttons */
@@ -68,10 +93,21 @@ st.markdown("""
         /* Form elements */
         .stTextInput>div>div>input, 
         .stTextArea>div>div>textarea,
-        .stSelectbox>div>div>div>div {
+        .stSelectbox>div>div>div>div,
+        .stNumberInput>div>div>input,
+        .stDateInput>div>div>input {
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+        
+        /* Form labels */
+        label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            display: block;
         }
         
         /* Cards and containers */
@@ -79,9 +115,20 @@ st.markdown("""
             background-color: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 1.25rem;
-            margin-bottom: 1.25rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        /* Adjust expander header */
+        .stExpander .st-emotion-cache-sh2krr p {
+            font-size: 1rem;
+            margin: 0;
+        }
+        
+        /* Adjust expander content */
+        .stExpander .st-emotion-cache-1p1nwyz {
+            padding: 0.75rem 0 0 0;
         }
         
         /* Section headers */
@@ -89,8 +136,8 @@ st.markdown("""
             color: #1e40af;
             border-bottom: 2px solid #dbeafe;
             padding-bottom: 0.5rem;
-            margin: 1.5rem 0 1rem 0;
-            font-size: 1.5rem;
+            margin: 1.25rem 0 0.75rem 0;
+            font-size: 1.4rem;
         }
         
         /* Tables */
@@ -100,28 +147,32 @@ st.markdown("""
             width: 100%;
             border-radius: 8px;
             overflow: hidden;
+            font-size: 0.85rem;
         }
         
         th, td {
             border: 1px solid #e2e8f0;
-            padding: 0.75rem 1rem;
+            padding: 0.5rem 0.75rem;
             text-align: left;
+            line-height: 1.4;
         }
         
         th {
             background-color: #eff6ff;
             color: #1e40af;
             font-weight: 600;
+            font-size: 0.9rem;
         }
         
         /* Custom classes */
         .highlight-box {
             background-color: #eff6ff;
             border-left: 4px solid #3b82f6;
-            padding: 1.25rem;
-            margin: 1.25rem 0;
+            padding: 1rem;
+            margin: 1rem 0;
             border-radius: 0 8px 8px 0;
             color: #1e40af;
+            font-size: 0.9rem;
         }
         
         /* Back to Review button */
